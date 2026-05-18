@@ -1,2 +1,4 @@
 /node_modules/
 .env
+iphone_usage.json
+mac_usage.json
