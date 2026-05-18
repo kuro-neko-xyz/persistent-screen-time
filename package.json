@@ -1,0 +1,24 @@
+{
+  "name": "persistent-screen-time",
+  "version": "1.0.0",
+  "description": "Scripts to form a database of your screen time",
+  "homepage": "https://github.com/kuro-neko-xyz/persistent-screen-time#readme",
+  "bugs": {
+    "url": "https://github.com/kuro-neko-xyz/persistent-screen-time/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuro-neko-xyz/persistent-screen-time.git"
+  },
+  "license": "GPL-3.0",
+  "author": "Alejandro Alemán Hernández",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "pg": "^8.20.0"
+  }
+}
