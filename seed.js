@@ -42,6 +42,12 @@ async function seedDatabase() {
     );
   `);
 
+  const insertQuery = `
+    INSERT INTO events (init_time, end_time, device_uuid, app_id)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (init_time, device_uuid, app_id) DO NOTHING;
+  `;
+
   console.log("Reading file...");
 
   const rawIphoneData = fs.readFileSync("iphone_usage.json");
@@ -49,30 +55,20 @@ async function seedDatabase() {
 
   console.log(`Found ${iphone.length} records. Inserting...`);
 
-  const insertQuery = `
-    INSERT INTO events (init_time, end_time, device_uuid, app_id)
-    VALUES ($1, $2, $3, $4)
-    ON CONFLICT (init_time, device_uuid, app_id) DO NOTHING
-  `;
-
   await client.query("BEGIN");
 
   try {
     for (const device of iphone) {
       const deviceUUID = device.device_id;
 
-      try {
-        await client.query(
-          `
-            INSERT INTO devices(uuid)
-            VALUES ($1)
-            ON CONFLICT (uuid) DO NOTHING
-          `,
-          [deviceUUID],
-        );
-      } catch (error) {
-        console.error("Error inserting data:", error);
-      }
+      await client.query(
+        `
+          INSERT INTO devices(uuid)
+          VALUES ($1)
+          ON CONFLICT (uuid) DO NOTHING;
+        `,
+        [deviceUUID],
+      );
 
       for (const event of device.events) {
         const initTime = event.timestamp;
@@ -86,7 +82,11 @@ async function seedDatabase() {
           `
             INSERT INTO apps(id, name)
             VALUES ($1, $2)
-            ON CONFLICT (id) DO NOTHING
+            ON CONFLICT (id)
+            DO UPDATE SET name = EXCLUDED.name
+            WHERE
+              (apps.name IS NULL OR apps.name = '') 
+              AND (EXCLUDED.name IS NOT NULL AND EXCLUDED.name != '');
           `,
           [appID, appName],
         );
@@ -95,14 +95,63 @@ async function seedDatabase() {
       }
 
       await client.query("COMMIT");
-      console.log("Database seeded successfully.");
+      console.log("iPhone database seeded successfully.");
     }
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error inserting data:", error);
-  } finally {
-    await client.end();
   }
+
+  console.log("Reading file...");
+
+  const rawMacData = fs.readFileSync("mac_usage.json");
+  const mac = JSON.parse(rawMacData);
+
+  console.log(`Found ${mac.length} records. Inserting...`);
+
+  await client.query("BEGIN");
+
+  try {
+    const deviceUUID = process.env.HARDWARE_UUID;
+
+    await client.query(
+      `
+        INSERT INTO devices(uuid)
+        VALUES ($1)
+        ON CONFLICT (uuid) DO NOTHING;
+      `,
+      [deviceUUID],
+    );
+
+    for (const event of mac) {
+      const initEpochTime = event.ZSTARTDATE;
+      const endEpochTime = event.ZENDDATE;
+      const initTime = new Date(
+        (initEpochTime + 978307200) * 1000,
+      ).toISOString();
+      const endTime = new Date((endEpochTime + 978307200) * 1000).toISOString();
+      const appID = event.ZVALUESTRING;
+
+      await client.query(
+        `
+        INSERT INTO apps(id)
+        VALUES ($1)
+        ON CONFLICT (id) DO NOTHING;
+      `,
+        [appID],
+      );
+
+      await client.query(insertQuery, [initTime, endTime, deviceUUID, appID]);
+    }
+
+    await client.query("COMMIT");
+    console.log("MAC database seeded successfully.");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting data:", error);
+  }
+
+  await client.end();
 }
 
 seedDatabase();
