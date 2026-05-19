@@ -32,8 +32,8 @@ async function seedDatabase() {
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS events (
-      init_time TIMESTAMP NOT NULL,
-      end_time TIMESTAMP NOT NULL,
+      init_time TIMESTAMPTZ NOT NULL,
+      end_time TIMESTAMPTZ NOT NULL,
       device_uuid UUID NOT NULL,
       app_id VARCHAR(255) NOT NULL,
       FOREIGN KEY (device_uuid) REFERENCES devices(uuid),
