@@ -1,0 +1,10 @@
+.container {
+  background-color: transparent;
+  border-style: none;
+  border-radius: 10px;
+  padding: 5px;
+}
+
+.container:hover {
+  background-color: grey;
+}

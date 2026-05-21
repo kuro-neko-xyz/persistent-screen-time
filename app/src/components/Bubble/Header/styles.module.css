@@ -1,0 +1,14 @@
+.container {
+  display: flex;
+  align-items: center;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-bottom-color: grey;
+  padding-bottom: 10px;
+}
+
+.title {
+  flex-grow: 1;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
