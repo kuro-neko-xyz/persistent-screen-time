@@ -1,8 +1,14 @@
 const Fastify = require("fastify");
+const cors = require("@fastify/cors");
 require("dotenv").config();
 
 const fastify = Fastify({
   logger: true,
+});
+
+fastify.register(cors, {
+  origin: process.env.APP_ORIGIN,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 });
 
 fastify.register(require("@fastify/postgres"), {

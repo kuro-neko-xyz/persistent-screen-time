@@ -6,11 +6,20 @@
 
 .row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.dailyUsage {
+  flex-grow: 1;
 }
 
 .title {
   font-size: 0.9rem;
   font-weight: normal;
-  flex-grow: 1;
+}
+
+.data {
+  font-weight: 500;
+  font-size: 2rem;
+  margin-top: 10px;
 }
