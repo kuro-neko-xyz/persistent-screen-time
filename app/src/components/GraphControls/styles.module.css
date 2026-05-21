@@ -1,0 +1,12 @@
+.container {
+  display: flex;
+  align-items: center;
+}
+
+.button {
+  background-color: #464646;
+  border-style: none;
+  padding: 5px 12px;
+  margin: 2px;
+  border-radius: 8px;
+}
