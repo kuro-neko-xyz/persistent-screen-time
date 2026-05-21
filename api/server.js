@@ -17,6 +17,35 @@ fastify.get("/", async (request, reply) => {
   return { hello: "world" };
 });
 
+fastify.get("/activity/week", async (request, reply) => {
+  const now = new Date();
+
+  const latestSunday = new Date(now);
+  latestSunday.setDate(now.getDate() - now.getDay());
+  latestSunday.setHours(0, 0, 0, 0);
+  const sundayBoundary = latestSunday.toISOString();
+
+  const client = await fastify.pg.connect();
+
+  const { rows } = await client.query(
+    `
+    SELECT
+      SUM(end_time - init_time) / NULLIF(COUNT(DISTINCT init_time::date), 0) AS average_daily_time
+    FROM
+      events
+    WHERE
+      init_time >= $1;
+  `,
+    [sundayBoundary],
+  );
+
+  client.release();
+
+  return {
+    averageDailyTime: rows[0].average_daily_time,
+  };
+});
+
 fastify.get("/activity/day", async (request, reply) => {
   const { date } = request.query;
 
