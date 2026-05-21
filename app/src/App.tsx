@@ -1,5 +1,6 @@
 import styles from "./App.module.css";
 import Bubble from "./components/Bubble";
+import GraphControls from "./components/GraphControls";
 import Select from "./components/Select";
 
 function App() {
@@ -12,7 +13,10 @@ function App() {
           </Select>
         </Bubble.Header>
         <Bubble.Body>
-          <p>Test</p>
+          <div className={styles.row}>
+            <h2 className={styles.title}>Daily Usage</h2>
+            <GraphControls />
+          </div>
         </Bubble.Body>
       </Bubble>
     </div>
