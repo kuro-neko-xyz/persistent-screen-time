@@ -33,22 +33,48 @@ fastify.get("/activity/week", async (request, reply) => {
 
   const client = await fastify.pg.connect();
 
-  const { rows } = await client.query(
+  const { rows: averageDailyTimeRows } = await client.query(
     `
-    SELECT
-      SUM(end_time - init_time) / NULLIF(COUNT(DISTINCT init_time::date), 0) AS average_daily_time
-    FROM
-      events
-    WHERE
-      init_time >= $1;
-  `,
+      SELECT
+        SUM(end_time - init_time) / NULLIF(COUNT(DISTINCT init_time::date), 0) AS average_daily_time
+      FROM
+        events
+      WHERE
+        init_time >= $1;
+    `,
+    [sundayBoundary],
+  );
+
+  const { rows: applicationRows } = await client.query(
+    `
+      SELECT
+        app_id,
+        apps.name AS app_name,
+        SUM(end_time - init_time) AS total_time_spent
+      FROM
+        events
+      JOIN
+        apps ON events.app_id = apps.id
+      WHERE
+        init_time >= $1
+      GROUP BY
+        app_id,
+        apps.name
+      ORDER BY
+        total_time_spent DESC;
+    `,
     [sundayBoundary],
   );
 
   client.release();
 
   return {
-    averageDailyTime: rows[0].average_daily_time,
+    averageDailyTime: averageDailyTimeRows[0].average_daily_time,
+    applications: applicationRows.map((row) => ({
+      id: row.app_id,
+      name: row.app_name,
+      totalTimeSpent: row.total_time_spent,
+    })),
   };
 });
 

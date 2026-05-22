@@ -7,17 +7,21 @@ import type { Activity } from "./models/Activity";
 
 const getWeeklyData = async () => {
   const response = await fetch(import.meta.env.VITE_API_URL + "/activity/week");
-  const data = ((await response.json()) as Activity).averageDailyTime;
+  const data = (await response.json()) as Activity;
 
-  return `${data.hours ? data.hours + "h " : ""} ${data.minutes ? data.minutes + "m " : ""}`;
+  return data;
 };
 
 function App() {
-  const [weeklyData, setWeeklyData] = useState("");
+  const [data, setData] = useState<Activity>();
 
   useEffect(() => {
-    getWeeklyData().then((data) => setWeeklyData(data));
+    getWeeklyData().then((data) => setData(data));
   }, []);
+
+  console.log(data);
+
+  if (!data) return <p>Loading...</p>;
 
   return (
     <div className={styles.container}>
@@ -31,10 +35,42 @@ function App() {
           <div className={styles.row}>
             <div className={styles.dailyUsage}>
               <h2 className={styles.title}>Daily Usage</h2>
-              <h3 className={styles.data}>{weeklyData}</h3>
+              <h3
+                className={styles.data}
+              >{`${data.averageDailyTime.hours ? data.averageDailyTime.hours + "h " : ""} ${data.averageDailyTime.minutes ? data.averageDailyTime.minutes + "m " : ""}`}</h3>
             </div>
             <GraphControls />
           </div>
+        </Bubble.Body>
+      </Bubble>
+      <Bubble>
+        <Bubble.Header>
+          <Select>
+            <option value="">Show Apps</option>
+          </Select>
+        </Bubble.Header>
+        <Bubble.Body>
+          <table>
+            <thead>
+              <th>App</th>
+              <th>Time</th>
+            </thead>
+            <tbody>
+              {data.applications
+                .filter(
+                  (app) =>
+                    app.totalTimeSpent.hours || app.totalTimeSpent.minutes,
+                )
+                .map((app) => {
+                  return (
+                    <tr key={app.id}>
+                      <td>{app.name || app.id}</td>
+                      <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
         </Bubble.Body>
       </Bubble>
     </div>

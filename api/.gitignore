@@ -2,3 +2,5 @@
 .env
 iphone_usage.json
 mac_usage.json
+/legacy_data/
+.DS_Store
