@@ -19,9 +19,12 @@ function App() {
     getWeeklyData().then((data) => setData(data));
   }, []);
 
-  console.log(data);
-
-  if (!data) return <p>Loading...</p>;
+  if (!data?.averageDailyTime)
+    return (
+      <div className={styles.container}>
+        <p>Loading...</p>
+      </div>
+    );
 
   return (
     <div className={styles.container}>
@@ -52,8 +55,10 @@ function App() {
         <Bubble.Body>
           <table>
             <thead>
-              <th>App</th>
-              <th>Time</th>
+              <tr>
+                <th>App</th>
+                <th>Time</th>
+              </tr>
             </thead>
             <tbody>
               {data.applications
