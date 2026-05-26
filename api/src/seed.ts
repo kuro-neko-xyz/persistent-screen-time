@@ -1,13 +1,15 @@
-const { Client } = require("pg");
-const fs = require("fs");
-require("dotenv").config();
+import { Client } from "pg";
+import fs from "fs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const client = new Client({
   user: process.env.PG_USER,
   host: process.env.PG_HOST,
   database: process.env.PG_DATABASE,
   password: process.env.PG_PASSWORD,
-  port: process.env.PG_PORT,
+  port: Number(process.env.PG_PORT),
 });
 
 async function seedDatabase() {
@@ -51,7 +53,7 @@ async function seedDatabase() {
   console.log("Reading file...");
 
   const rawIphoneData = fs.readFileSync("iphone_usage.json");
-  const iphone = JSON.parse(rawIphoneData);
+  const iphone = JSON.parse(rawIphoneData.toString("utf-8"));
 
   console.log(`Found ${iphone.length} records. Inserting...`);
 
@@ -105,7 +107,7 @@ async function seedDatabase() {
   console.log("Reading file...");
 
   const rawMacData = fs.readFileSync("mac_usage.json");
-  const mac = JSON.parse(rawMacData);
+  const mac = JSON.parse(rawMacData.toString("utf-8"));
 
   console.log(`Found ${mac.length} records. Inserting...`);
 

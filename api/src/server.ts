@@ -1,6 +1,10 @@
-const Fastify = require("fastify");
-const cors = require("@fastify/cors");
-require("dotenv").config();
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import dotenv from "dotenv";
+import postgres from "@fastify/postgres";
+import { ActivityRequestParams } from "./models/ActivityRequest.js";
+
+dotenv.config();
 
 const fastify = Fastify({
   logger: true,
@@ -11,12 +15,12 @@ fastify.register(cors, {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 });
 
-fastify.register(require("@fastify/postgres"), {
+fastify.register(postgres, {
   user: process.env.PG_USER,
   host: process.env.PG_HOST,
   database: process.env.PG_DATABASE,
   password: process.env.PG_PASSWORD,
-  port: process.env.PG_PORT,
+  port: Number(process.env.PG_PORT),
 });
 
 fastify.get("/", async (request, reply) => {
@@ -78,7 +82,9 @@ fastify.get("/activity/week", async (request, reply) => {
   };
 });
 
-fastify.get("/activity/day", async (request, reply) => {
+fastify.get<{
+  Querystring: ActivityRequestParams;
+}>("/activity/day", async (request, reply) => {
   const { date } = request.query;
 
   const startDate = new Date(`${date}T00:00:00`);
