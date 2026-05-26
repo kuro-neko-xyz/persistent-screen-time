@@ -5,8 +5,18 @@ import GraphControls from "./components/GraphControls";
 import Select from "./components/Select";
 import type { Activity } from "./models/Activity";
 
-const getWeeklyData = async () => {
-  const response = await fetch(import.meta.env.VITE_API_URL + "/activity/week");
+const getWeeklyData = async ({ date }: { date: Date }) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  const formattedDate = `${year}-${month}-${day}`;
+
+  const query = `?date=${formattedDate}`;
+
+  const response = await fetch(
+    import.meta.env.VITE_API_URL + "/activity/week" + query,
+  );
   const data = (await response.json()) as Activity;
 
   return data;
@@ -14,12 +24,17 @@ const getWeeklyData = async () => {
 
 function App() {
   const [data, setData] = useState<Activity>();
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
-    getWeeklyData().then((data) => setData(data));
-  }, []);
+    getWeeklyData({ date: selectedDate }).then((data) => setData(data));
+  }, [selectedDate]);
 
-  if (!data?.averageDailyTime)
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  if (!data)
     return (
       <div className={styles.container}>
         <p>Loading...</p>
@@ -40,9 +55,12 @@ function App() {
               <h2 className={styles.title}>Daily Usage</h2>
               <h3
                 className={styles.data}
-              >{`${data.averageDailyTime.hours ? data.averageDailyTime.hours + "h " : ""} ${data.averageDailyTime.minutes ? data.averageDailyTime.minutes + "m " : ""}`}</h3>
+              >{`${data.averageDailyTime?.hours ? data.averageDailyTime?.hours + "h " : ""} ${data.averageDailyTime?.minutes ? data.averageDailyTime?.minutes + "m " : ""}`}</h3>
             </div>
-            <GraphControls />
+            <GraphControls
+              selectedDate={selectedDate}
+              handleDateChange={handleDateChange}
+            />
           </div>
         </Bubble.Body>
       </Bubble>

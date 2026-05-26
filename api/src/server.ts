@@ -27,13 +27,22 @@ fastify.get("/", async (request, reply) => {
   return { hello: "world" };
 });
 
-fastify.get("/activity/week", async (request, reply) => {
-  const now = new Date();
+fastify.get<{
+  Querystring: ActivityRequestParams;
+}>("/activity/week", async (request, reply) => {
+  const { date: dateString } = request.query;
 
-  const latestSunday = new Date(now);
-  latestSunday.setDate(now.getDate() - now.getDay());
+  const date = dateString ? new Date(`${dateString}T00:00:00`) : new Date();
+
+  const latestSunday = new Date(date);
+  latestSunday.setDate(date.getDate() - date.getDay());
   latestSunday.setHours(0, 0, 0, 0);
   const sundayBoundary = latestSunday.toISOString();
+
+  const nextSaturday = new Date(date);
+  nextSaturday.setDate(date.getDate() + (6 - date.getDay()));
+  nextSaturday.setHours(23, 59, 59, 999);
+  const saturdayBoundary = nextSaturday.toISOString();
 
   const client = await fastify.pg.connect();
 
@@ -44,9 +53,10 @@ fastify.get("/activity/week", async (request, reply) => {
       FROM
         events
       WHERE
-        init_time >= $1;
+        init_time >= $1
+        AND init_time <= $2;
     `,
-    [sundayBoundary],
+    [sundayBoundary, saturdayBoundary],
   );
 
   const { rows: applicationRows } = await client.query(
@@ -61,13 +71,14 @@ fastify.get("/activity/week", async (request, reply) => {
         apps ON events.app_id = apps.id
       WHERE
         init_time >= $1
+        AND init_time <= $2
       GROUP BY
         app_id,
         apps.name
       ORDER BY
         total_time_spent DESC;
     `,
-    [sundayBoundary],
+    [sundayBoundary, saturdayBoundary],
   );
 
   client.release();

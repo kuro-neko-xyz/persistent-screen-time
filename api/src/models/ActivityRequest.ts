@@ -1,5 +1,5 @@
 interface ActivityRequestParams {
-  date: string;
+  date?: string;
 }
 
 export type { ActivityRequestParams };
