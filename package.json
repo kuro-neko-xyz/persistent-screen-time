@@ -1,0 +1,8 @@
+{
+  "name": "persistent-screen-time",
+  "workspaces": [
+    "api",
+    "app",
+    "shared"
+  ]
+}

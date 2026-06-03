@@ -1,5 +1,5 @@
 {
-  "name": "persistent-screen-time",
+  "name": "persistent-screen-time-api",
   "version": "1.0.0",
   "description": "Scripts to form a database of your screen time",
   "homepage": "https://github.com/kuro-neko-xyz/persistent-screen-time#readme",
@@ -23,6 +23,7 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@fastify/postgres": "^6.0.2",
+    "@persistent-screen-time/shared": "*",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
     "pg": "^8.20.0"

@@ -2,7 +2,10 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import dotenv from "dotenv";
 import postgres from "@fastify/postgres";
-import { ActivityRequestParams } from "./models/ActivityRequest.js";
+import {
+  Activity,
+  ActivityRequestParams,
+} from "@persistent-screen-time/shared";
 
 dotenv.config();
 
@@ -29,6 +32,7 @@ fastify.get("/", async (request, reply) => {
 
 fastify.get<{
   Querystring: ActivityRequestParams;
+  Reply: Activity;
 }>("/activity/week", async (request, reply) => {
   const { date: dateString } = request.query;
 
