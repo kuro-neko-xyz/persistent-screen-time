@@ -1,4 +1,4 @@
-interface Time {
+export interface Time {
   hours?: number;
   milliseconds?: number;
   minutes?: number;
@@ -11,7 +11,13 @@ interface Application {
   totalTimeSpent: Time;
 }
 
+interface Day {
+  date: string;
+  totalTimeSpent: Time;
+}
+
 export interface Activity {
   averageDailyTime: Time;
   applications: Application[];
+  days: Day[];
 }

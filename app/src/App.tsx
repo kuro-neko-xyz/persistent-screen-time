@@ -3,7 +3,7 @@ import styles from "./App.module.css";
 import Bubble from "./components/Bubble";
 import GraphControls from "./components/GraphControls";
 import Select from "./components/Select";
-import type { Activity } from "./models/Activity";
+import type { Activity, Time } from "./models/Activity";
 
 const getWeeklyData = async ({ date }: { date: Date }) => {
   const year = date.getFullYear();
@@ -20,6 +20,16 @@ const getWeeklyData = async ({ date }: { date: Date }) => {
   const data = (await response.json()) as Activity;
 
   return data;
+};
+
+const calculateTimePercentage = (time: Time) => {
+  const hours = time.hours || 0;
+  const minutes = time.minutes || 0;
+  const totalMinutes = hours * 60 + minutes;
+
+  const percentage = (totalMinutes / 1440) * 100;
+
+  return `${percentage}%`;
 };
 
 function App() {
@@ -57,10 +67,28 @@ function App() {
                 className={styles.data}
               >{`${data.averageDailyTime?.hours ? data.averageDailyTime?.hours + "h " : ""} ${data.averageDailyTime?.minutes ? data.averageDailyTime?.minutes + "m " : ""}`}</h3>
             </div>
+
             <GraphControls
               selectedDate={selectedDate}
               handleDateChange={handleDateChange}
             />
+          </div>
+          <div className={styles.row}>
+            <div className={styles.usageByDay}>
+              {data.days.map((day) => {
+                return (
+                  <div
+                    style={{
+                      backgroundColor: "#464646",
+                      width: 50,
+                      height: calculateTimePercentage(day.totalTimeSpent),
+                      margin: 5,
+                    }}
+                    key={day.date}
+                  />
+                );
+              })}
+            </div>
           </div>
         </Bubble.Body>
       </Bubble>

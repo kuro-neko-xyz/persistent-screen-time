@@ -23,3 +23,9 @@
   font-size: 2rem;
   margin-top: 10px;
 }
+
+.usageByDay {
+  display: flex;
+  height: 100px;
+  align-items: flex-end;
+}

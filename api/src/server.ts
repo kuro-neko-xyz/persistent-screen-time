@@ -59,6 +59,22 @@ fastify.get<{
     [sundayBoundary, saturdayBoundary],
   );
 
+  const { rows: dayRows } = await client.query(
+    `
+      SELECT
+        init_time::date as date,
+        SUM(end_time - init_time) AS total_time_spent
+      FROM
+        events
+      WHERE
+        init_time >= $1
+        AND init_time <= $2
+      GROUP BY
+        init_time::date;
+    `,
+    [sundayBoundary, saturdayBoundary],
+  );
+
   const { rows: applicationRows } = await client.query(
     `
       SELECT
@@ -88,6 +104,10 @@ fastify.get<{
     applications: applicationRows.map((row) => ({
       id: row.app_id,
       name: row.app_name,
+      totalTimeSpent: row.total_time_spent,
+    })),
+    days: dayRows.map((row) => ({
+      date: row.date,
       totalTimeSpent: row.total_time_spent,
     })),
   };
