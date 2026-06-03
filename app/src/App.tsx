@@ -3,7 +3,7 @@ import styles from "./App.module.css";
 import Bubble from "./components/Bubble";
 import GraphControls from "./components/GraphControls";
 import Select from "./components/Select";
-import type { Activity, Time } from "./models/Activity";
+import type { Activity, Time } from "@persistent-screen-time/shared";
 
 const getWeeklyData = async ({ date }: { date: Date }) => {
   const year = date.getFullYear();
