@@ -3,7 +3,11 @@ import styles from "./App.module.css";
 import Bubble from "./components/Bubble";
 import GraphControls from "./components/GraphControls";
 import Select from "./components/Select";
-import type { Activity, Day, Time } from "@persistent-screen-time/shared";
+import {
+  abbreviatedDaysOfTheWeek,
+  type Activity,
+  type Time,
+} from "@persistent-screen-time/shared";
 
 const getWeeklyData = async ({ date }: { date: Date }) => {
   const year = date.getFullYear();
@@ -22,19 +26,12 @@ const getWeeklyData = async ({ date }: { date: Date }) => {
   return data;
 };
 
-const calculateTimePercentage = (
-  time: Time,
-  longestDayInTheWeek: Day | null,
-) => {
+const calculateTimePercentage = (time: Time, longestDayInTheWeek: number) => {
   const hours = time.hours || 0;
   const minutes = time.minutes || 0;
   const totalMinutes = hours * 60 + minutes;
 
-  const longestHours = longestDayInTheWeek?.totalTimeSpent.hours || 0;
-  const longestMinutes = longestDayInTheWeek?.totalTimeSpent.minutes || 0;
-  const longestTotalMinutes = longestHours * 60 + longestMinutes;
-
-  const percentage = (totalMinutes / longestTotalMinutes) * 100;
+  const percentage = (totalMinutes / longestDayInTheWeek) * 100;
 
   return `${percentage}%`;
 };
@@ -58,20 +55,14 @@ function App() {
       </div>
     );
 
-  const longestDayInTheWeek = data.days.reduce(
-    (longest, day) => {
-      if (!longest) return day;
-      if (
-        (day.totalTimeSpent.hours || 0) * 60 +
-          (day.totalTimeSpent.minutes || 0) >
-        (longest.totalTimeSpent.hours || 0) * 60 +
-          (longest.totalTimeSpent.minutes || 0)
-      )
-        return day;
-      return longest;
-    },
-    null as Day | null,
-  );
+  const longestDayInTheWeek = data.days.reduce((longest, day) => {
+    const minutesInDay =
+      (day.totalTimeSpent.hours || 0) * 60 + (day.totalTimeSpent.minutes || 0);
+
+    if (!longest) return minutesInDay;
+    if (minutesInDay > longest) return minutesInDay;
+    return longest;
+  }, 0);
 
   return (
     <div className={styles.container}>
@@ -97,22 +88,30 @@ function App() {
           </div>
           <div className={styles.row}>
             <div className={styles.usageByDay}>
-              {data.days.map((day) => {
+              {data.days.map((day, index) => {
                 return (
-                  <div
-                    style={{
-                      backgroundColor: "#464646",
-                      width: 50,
-                      height: calculateTimePercentage(
-                        day.totalTimeSpent,
-                        longestDayInTheWeek,
-                      ),
-                      margin: 5,
-                    }}
-                    key={day.date}
-                  />
+                  <div className={styles.dayContainer}>
+                    <div
+                      style={{
+                        backgroundColor: "#464646",
+                        width: 50,
+                        height: calculateTimePercentage(
+                          day.totalTimeSpent,
+                          longestDayInTheWeek,
+                        ),
+                        margin: 5,
+                      }}
+                      key={day.date}
+                    />
+                    <p className={styles.dayName}>
+                      {abbreviatedDaysOfTheWeek[index]}
+                    </p>
+                  </div>
                 );
               })}
+              <p className={styles.graphCeiling}>
+                {Math.ceil(longestDayInTheWeek / 60)}h
+              </p>
             </div>
           </div>
         </Bubble.Body>
