@@ -11,7 +11,7 @@ interface Application {
   totalTimeSpent: Time;
 }
 
-interface Day {
+export interface Day {
   date: string;
   totalTimeSpent: Time;
 }

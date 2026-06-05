@@ -3,7 +3,7 @@ import styles from "./App.module.css";
 import Bubble from "./components/Bubble";
 import GraphControls from "./components/GraphControls";
 import Select from "./components/Select";
-import type { Activity, Time } from "@persistent-screen-time/shared";
+import type { Activity, Day, Time } from "@persistent-screen-time/shared";
 
 const getWeeklyData = async ({ date }: { date: Date }) => {
   const year = date.getFullYear();
@@ -22,12 +22,19 @@ const getWeeklyData = async ({ date }: { date: Date }) => {
   return data;
 };
 
-const calculateTimePercentage = (time: Time) => {
+const calculateTimePercentage = (
+  time: Time,
+  longestDayInTheWeek: Day | null,
+) => {
   const hours = time.hours || 0;
   const minutes = time.minutes || 0;
   const totalMinutes = hours * 60 + minutes;
 
-  const percentage = (totalMinutes / 1440) * 100;
+  const longestHours = longestDayInTheWeek?.totalTimeSpent.hours || 0;
+  const longestMinutes = longestDayInTheWeek?.totalTimeSpent.minutes || 0;
+  const longestTotalMinutes = longestHours * 60 + longestMinutes;
+
+  const percentage = (totalMinutes / longestTotalMinutes) * 100;
 
   return `${percentage}%`;
 };
@@ -50,6 +57,21 @@ function App() {
         <p>Loading...</p>
       </div>
     );
+
+  const longestDayInTheWeek = data.days.reduce(
+    (longest, day) => {
+      if (!longest) return day;
+      if (
+        (day.totalTimeSpent.hours || 0) * 60 +
+          (day.totalTimeSpent.minutes || 0) >
+        (longest.totalTimeSpent.hours || 0) * 60 +
+          (longest.totalTimeSpent.minutes || 0)
+      )
+        return day;
+      return longest;
+    },
+    null as Day | null,
+  );
 
   return (
     <div className={styles.container}>
@@ -81,7 +103,10 @@ function App() {
                     style={{
                       backgroundColor: "#464646",
                       width: 50,
-                      height: calculateTimePercentage(day.totalTimeSpent),
+                      height: calculateTimePercentage(
+                        day.totalTimeSpent,
+                        longestDayInTheWeek,
+                      ),
                       margin: 5,
                     }}
                     key={day.date}
