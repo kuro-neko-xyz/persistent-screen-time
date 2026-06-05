@@ -156,6 +156,4 @@ async function seedDatabase() {
   await client.end();
 }
 
-seedDatabase();
-
-module.exports = client;
+export default seedDatabase;
