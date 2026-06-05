@@ -27,5 +27,29 @@
 .usageByDay {
   display: flex;
   height: 100px;
-  align-items: flex-end;
+  border-top-style: dashed;
+  border-top-width: 1px;
+  border-top-color: white;
+  position: relative;
+  margin-top: 30px;
+}
+
+.dayContainer {
+  background-color: "red";
+  height: 100%;
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.dayName {
+  margin-left: 7px;
+  margin-top: 5px;
+}
+
+.graphCeiling {
+  position: absolute;
+  right: -30px;
+  top: -7px;
 }
