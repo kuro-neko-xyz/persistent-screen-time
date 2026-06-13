@@ -2,9 +2,6 @@ import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
 import { promisify } from "util";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const execAsync = promisify(exec);
 
@@ -24,8 +21,15 @@ function relocateFile(
     );
 
     fs.renameSync(filePath, newPath);
-  } catch (error) {
-    console.error(`Error handling ${device} usage file:`, error);
+  } catch (error: any) {
+    console.error(`------- Error handling ${device} usage file: -------`);
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error Message:", error.message);
+
+    if (error.stderr) console.error("Shell STDERR:", error.stderr);
+    if (error.stdout) console.error("Shell STDOUT:", error.stdout);
+
+    process.exit(1);
   }
 }
 
@@ -54,7 +58,6 @@ async function retrieveData() {
   const HOME_PATH = process.env.HOME_PATH;
 
   try {
-    await execAsync(`source ${AW_IMPORT_SCREENTIME_PATH}/.venv/bin/activate`);
     await execAsync(
       `${AW_IMPORT_SCREENTIME_PATH}/.venv/bin/aw-import-screentime events preview > ${API_ROOT_DIRECTORY}/iphone_usage.json`,
     );
@@ -64,8 +67,15 @@ async function retrieveData() {
       WHERE ZSTREAMNAME = '/app/usage'
       ORDER BY ZSTARTDATE;
     " > ${API_ROOT_DIRECTORY}/mac_usage.json`);
-  } catch (error) {
-    console.error("Error reading databases:", error);
+  } catch (error: any) {
+    console.error("------- Error reading databases: -------");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error Message:", error.message);
+
+    if (error.stderr) console.error("Shell STDERR:", error.stderr);
+    if (error.stdout) console.error("Shell STDOUT:", error.stdout);
+
+    process.exit(1);
   }
 }
 

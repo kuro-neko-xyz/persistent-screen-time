@@ -3,6 +3,7 @@ import path from "path";
 import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { fileURLToPath } from "url";
 
 const execAsync = promisify(exec);
 
@@ -23,7 +24,11 @@ async function ensureLaunchdScheduled() {
   console.log("[Launchd] Installing background job...");
 
   const nodePath = process.execPath;
-  const scriptPath = path.resolve(process.argv[1]);
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  const projectRoot = path.resolve(__dirname, "..", "..");
 
   const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -31,11 +36,14 @@ async function ensureLaunchdScheduled() {
     <dict>
         <key>Label</key>
         <string>${JOB_LABEL}</string>
+
+        <key>WorkingDirectory</key>
+        <string>${projectRoot}</string>
         
         <key>ProgramArguments</key>
         <array>
             <string>${nodePath}</string>
-            <string>${scriptPath}</string>
+            <string>${path.join(projectRoot, "dist/seed/index.js")}</string>
         </array>
         
         <key>StartInterval</key>
@@ -59,8 +67,15 @@ async function ensureLaunchdScheduled() {
     console.log(
       `[Launchd] Successfully scheduled to run every ${RUN_INTERVAL_SECONDS} seconds!`,
     );
-  } catch (error) {
-    console.error("[Launchd] Failed to install job:", error);
+  } catch (error: any) {
+    console.error("------- [Launchd] Failed to install job: -------");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error Message:", error.message);
+
+    if (error.stderr) console.error("Shell STDERR:", error.stderr);
+    if (error.stdout) console.error("Shell STDOUT:", error.stdout);
+
+    process.exit(1);
   }
 }
 
