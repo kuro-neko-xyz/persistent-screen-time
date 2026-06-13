@@ -6,22 +6,37 @@ import Select from "./components/Select";
 import {
   abbreviatedDaysOfTheWeek,
   type Activity,
+  type Device,
   type Time,
 } from "@persistent-screen-time/shared";
 
-const getWeeklyData = async ({ date }: { date: Date }) => {
+const getWeeklyData = async ({
+  date,
+  deviceUUID,
+}: {
+  date: Date;
+  deviceUUID: string;
+}) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
   const formattedDate = `${year}-${month}-${day}`;
 
-  const query = `?date=${formattedDate}`;
+  const dateQuery = `?date=${formattedDate}`;
+  const deviceQuery = deviceUUID ? `&device=${deviceUUID}` : "";
 
   const response = await fetch(
-    import.meta.env.VITE_API_URL + "/activity/week" + query,
+    import.meta.env.VITE_API_URL + "/activity/week" + dateQuery + deviceQuery,
   );
   const data = (await response.json()) as Activity;
+
+  return data;
+};
+
+const getDevices = async () => {
+  const response = await fetch(import.meta.env.VITE_API_URL + "/devices");
+  const data = await response.json();
 
   return data;
 };
@@ -40,9 +55,18 @@ function App() {
   const [data, setData] = useState<Activity>();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<string>("");
+
   useEffect(() => {
-    getWeeklyData({ date: selectedDate }).then((data) => setData(data));
-  }, [selectedDate]);
+    getDevices().then((data) => setDevices(data));
+  }, []);
+
+  useEffect(() => {
+    getWeeklyData({ date: selectedDate, deviceUUID: selectedDevice }).then(
+      (data) => setData(data),
+    );
+  }, [selectedDate, selectedDevice]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -68,8 +92,20 @@ function App() {
     <div className={styles.container}>
       <Bubble>
         <Bubble.Header title="Device">
-          <Select>
-            <option value="">All Devices</option>
+          <Select
+            onChange={(e) => setSelectedDevice(e.target.value)}
+            value={selectedDevice}
+          >
+            <option key="all" value="">
+              All Devices
+            </option>
+            {devices.map((device) => {
+              return (
+                <option key={device.uuid} value={device.uuid}>
+                  {device.name || device.uuid}
+                </option>
+              );
+            })}
           </Select>
         </Bubble.Header>
         <Bubble.Body>

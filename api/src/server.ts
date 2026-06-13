@@ -34,7 +34,7 @@ fastify.get<{
   Querystring: ActivityRequestParams;
   Reply: Activity;
 }>("/activity/week", async (request, reply) => {
-  const { date: dateString } = request.query;
+  const { date: dateString, device: deviceUUID } = request.query;
 
   const date = dateString ? new Date(`${dateString}T00:00:00`) : new Date();
 
@@ -58,9 +58,10 @@ fastify.get<{
         events
       WHERE
         init_time >= $1
-        AND init_time <= $2;
+        AND init_time <= $2
+        AND ($3::uuid IS NULL OR device_uuid = $3);
     `,
-    [sundayBoundary, saturdayBoundary],
+    [sundayBoundary, saturdayBoundary, deviceUUID || null],
   );
 
   const { rows: dayRows } = await client.query(
@@ -73,10 +74,11 @@ fastify.get<{
       WHERE
         init_time >= $1
         AND init_time <= $2
+        AND ($3::uuid IS NULL OR device_uuid = $3)
       GROUP BY
         init_time::date;
     `,
-    [sundayBoundary, saturdayBoundary],
+    [sundayBoundary, saturdayBoundary, deviceUUID || null],
   );
 
   const { rows: applicationRows } = await client.query(
@@ -92,13 +94,14 @@ fastify.get<{
       WHERE
         init_time >= $1
         AND init_time <= $2
+        AND ($3::uuid IS NULL OR device_uuid = $3)
       GROUP BY
         app_id,
         apps.name
       ORDER BY
         total_time_spent DESC;
     `,
-    [sundayBoundary, saturdayBoundary],
+    [sundayBoundary, saturdayBoundary, deviceUUID || null],
   );
 
   client.release();
@@ -153,6 +156,20 @@ fastify.get<{
         total_time_spent DESC;
     `,
     [startDate, endDate],
+  );
+
+  client.release();
+
+  return rows;
+});
+
+fastify.get("/devices", async (request, reply) => {
+  const client = await fastify.pg.connect();
+
+  const { rows } = await client.query(
+    `
+      SELECT * FROM devices;
+    `,
   );
 
   client.release();
