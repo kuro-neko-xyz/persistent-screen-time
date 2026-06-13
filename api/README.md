@@ -15,8 +15,10 @@ ALTER DATABASE screentime OWNER TO screentime;
 
 **On a fresh PostgreSQL installation you may need to modify the `pg_hba.conf` to change the method of authentication from `peer` to `scram-sha-256` if you do not want to create an `screentime` user in your system.**
 
-To populate airports database:
+To populate screentime database:
 ```
 npm install
 npm run populate
 ```
+
+**You will need to grant full disk access to your node and python binaries.**

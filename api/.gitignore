@@ -3,4 +3,5 @@
 iphone_usage.json
 mac_usage.json
 /legacy_data/
+/dist/
 .DS_Store

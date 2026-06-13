@@ -1,8 +1,5 @@
 import { Client } from "pg";
 import fs from "fs";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const client = new Client({
   user: process.env.PG_USER,
@@ -99,9 +96,17 @@ async function seedDatabase() {
       await client.query("COMMIT");
       console.log("iPhone database seeded successfully.");
     }
-  } catch (error) {
+  } catch (error: any) {
     await client.query("ROLLBACK");
-    console.error("Error inserting data:", error);
+    
+    console.error("------- Error inserting data -------");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error Message:", error.message);
+
+    if (error.stderr) console.error("Shell STDERR:", error.stderr);
+    if (error.stdout) console.error("Shell STDOUT:", error.stdout);
+
+    process.exit(1);
   }
 
   console.log("Reading file...");
@@ -148,9 +153,17 @@ async function seedDatabase() {
 
     await client.query("COMMIT");
     console.log("MAC database seeded successfully.");
-  } catch (error) {
+  } catch (error: any) {
     await client.query("ROLLBACK");
-    console.error("Error inserting data:", error);
+
+    console.error("------- Error inserting data -------");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error Message:", error.message);
+
+    if (error.stderr) console.error("Shell STDERR:", error.stderr);
+    if (error.stdout) console.error("Shell STDOUT:", error.stdout);
+
+    process.exit(1);
   }
 
   await client.end();
