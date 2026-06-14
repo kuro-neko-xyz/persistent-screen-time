@@ -42,6 +42,10 @@ const getDevices = async () => {
 };
 
 const calculateTimePercentage = (time: Time, longestDayInTheWeek: number) => {
+  if (!longestDayInTheWeek) {
+    return "0%";
+  }
+
   const hours = time.hours || 0;
   const minutes = time.minutes || 0;
   const totalMinutes = hours * 60 + minutes;
@@ -126,7 +130,7 @@ function App() {
             <div className={styles.usageByDay}>
               {data.days.map((day, index) => {
                 return (
-                  <div className={styles.dayContainer}>
+                  <div key={day.date} className={styles.dayContainer}>
                     <div
                       style={{
                         backgroundColor: "#464646",

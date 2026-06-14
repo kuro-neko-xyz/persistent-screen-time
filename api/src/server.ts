@@ -64,21 +64,33 @@ fastify.get<{
     [sundayBoundary, saturdayBoundary, deviceUUID || null],
   );
 
+  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const { rows: dayRows } = await client.query(
     `
+      WITH date_series AS (
+        SELECT generate_series(
+          ($1::timestamptz AT TIME ZONE $4)::date,
+          ($2::timestamptz AT TIME ZONE $4)::date,
+          '1 day'::interval
+        )::date AS date
+      )
       SELECT
-        init_time::date as date,
-        SUM(end_time - init_time) AS total_time_spent
+        ds.date,
+        COALESCE(SUM(e.end_time - e.init_time), INTERVAL '0') AS total_time_spent
       FROM
-        events
-      WHERE
-        init_time >= $1
+        date_series ds
+      LEFT JOIN
+        events e ON ds.date = e.init_time::date
+        AND init_time >= $1
         AND init_time <= $2
         AND ($3::uuid IS NULL OR device_uuid = $3)
       GROUP BY
-        init_time::date;
+        ds.date
+      ORDER BY
+        ds.date ASC;
     `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null],
+    [sundayBoundary, saturdayBoundary, deviceUUID || null, localTimeZone],
   );
 
   const { rows: applicationRows } = await client.query(
