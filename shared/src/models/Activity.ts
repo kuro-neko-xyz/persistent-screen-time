@@ -8,6 +8,13 @@ export interface Time {
 interface Application {
   id: string;
   name?: string;
+  imageUrl?: string;
+  totalTimeSpent: Time;
+}
+
+interface Category {
+  id: number;
+  name?: string;
   totalTimeSpent: Time;
 }
 
@@ -18,6 +25,7 @@ export interface Day {
 
 export interface Activity {
   averageDailyTime: Time;
-  applications: Application[];
+  applications?: Application[];
+  categories?: Category[];
   days: Day[];
 }

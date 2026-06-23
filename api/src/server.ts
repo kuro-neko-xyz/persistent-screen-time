@@ -6,6 +6,9 @@ import {
   Activity,
   ActivityRequestParams,
 } from "@persistent-screen-time/shared";
+import calculateBoundaries from "./utils/calculateBoundaries.js";
+import getAverageDailyTime from "./queries/getAverageDailyTime.js";
+import getDay from "./queries/getDay.js";
 
 dotenv.config();
 
@@ -36,61 +39,22 @@ fastify.get<{
 }>("/activity/week", async (request, reply) => {
   const { date: dateString, device: deviceUUID } = request.query;
 
-  const date = dateString ? new Date(`${dateString}T00:00:00`) : new Date();
-
-  const latestSunday = new Date(date);
-  latestSunday.setDate(date.getDate() - date.getDay());
-  latestSunday.setHours(0, 0, 0, 0);
-  const sundayBoundary = latestSunday.toISOString();
-
-  const nextSaturday = new Date(date);
-  nextSaturday.setDate(date.getDate() + (6 - date.getDay()));
-  nextSaturday.setHours(23, 59, 59, 999);
-  const saturdayBoundary = nextSaturday.toISOString();
+  const { sundayBoundary, saturdayBoundary } = calculateBoundaries(dateString);
 
   const client = await fastify.pg.connect();
 
-  const { rows: averageDailyTimeRows } = await client.query(
-    `
-      SELECT
-        SUM(end_time - init_time) / NULLIF(COUNT(DISTINCT init_time::date), 0) AS average_daily_time
-      FROM
-        events
-      WHERE
-        init_time >= $1
-        AND init_time <= $2
-        AND ($3::uuid IS NULL OR device_uuid = $3);
-    `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null],
+  const { rows: averageDailyTimeRows } = await getAverageDailyTime(
+    client,
+    sundayBoundary,
+    saturdayBoundary,
+    deviceUUID,
   );
 
-  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  const { rows: dayRows } = await client.query(
-    `
-      WITH date_series AS (
-        SELECT generate_series(
-          ($1::timestamptz AT TIME ZONE $4)::date,
-          ($2::timestamptz AT TIME ZONE $4)::date,
-          '1 day'::interval
-        )::date AS date
-      )
-      SELECT
-        ds.date,
-        COALESCE(SUM(e.end_time - e.init_time), INTERVAL '0') AS total_time_spent
-      FROM
-        date_series ds
-      LEFT JOIN
-        events e ON ds.date = e.init_time::date
-        AND init_time >= $1
-        AND init_time <= $2
-        AND ($3::uuid IS NULL OR device_uuid = $3)
-      GROUP BY
-        ds.date
-      ORDER BY
-        ds.date ASC;
-    `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null, localTimeZone],
+  const { rows: dayRows } = await getDay(
+    client,
+    sundayBoundary,
+    saturdayBoundary,
+    deviceUUID,
   );
 
   const { rows: applicationRows } = await client.query(
@@ -98,6 +62,7 @@ fastify.get<{
       SELECT
         app_id,
         apps.name AS app_name,
+        apps.image_url AS app_image_url,
         SUM(end_time - init_time) AS total_time_spent
       FROM
         events
@@ -109,7 +74,8 @@ fastify.get<{
         AND ($3::uuid IS NULL OR device_uuid = $3)
       GROUP BY
         app_id,
-        apps.name
+        app_name,
+        app_image_url
       ORDER BY
         total_time_spent DESC;
     `,
@@ -123,6 +89,75 @@ fastify.get<{
     applications: applicationRows.map((row) => ({
       id: row.app_id,
       name: row.app_name,
+      imageUrl: row.app_image_url,
+      totalTimeSpent: row.total_time_spent,
+    })),
+    days: dayRows.map((row) => ({
+      date: row.date,
+      totalTimeSpent: row.total_time_spent,
+    })),
+  };
+});
+
+fastify.get<{
+  Querystring: ActivityRequestParams;
+  Reply: Activity;
+}>("/activity/week/category", async (request, reply) => {
+  const { date: dateString, device: deviceUUID } = request.query;
+
+  const { sundayBoundary, saturdayBoundary } = calculateBoundaries(dateString);
+
+  const client = await fastify.pg.connect();
+
+  const { rows: averageDailyTimeRows } = await getAverageDailyTime(
+    client,
+    sundayBoundary,
+    saturdayBoundary,
+    deviceUUID,
+  );
+
+  const { rows: dayRows } = await getDay(
+    client,
+    sundayBoundary,
+    saturdayBoundary,
+    deviceUUID,
+  );
+
+  const { rows: categoryRows } = await client.query(
+    `
+      SELECT
+        c.id AS category_id,
+        c.name AS category_name,
+        SUM(e.end_time - e.init_time) AS total_time_spent
+      FROM
+        events e
+      JOIN
+        apps a ON e.app_id = a.id
+      JOIN
+        app_categories ac ON a.id = ac.app_id
+      JOIN
+        categories c ON ac.category_id = c.id
+      WHERE
+        e.init_time >= $1
+        AND e.init_time <= $2
+        AND ($3::uuid IS NULL OR e.device_uuid = $3)
+        AND ac.is_primary = TRUE
+      GROUP BY
+        c.id,
+        category_name
+      ORDER BY
+        total_time_spent DESC;
+    `,
+    [sundayBoundary, saturdayBoundary, deviceUUID || null],
+  );
+
+  client.release();
+
+  return {
+    averageDailyTime: averageDailyTimeRows[0].average_daily_time,
+    categories: categoryRows.map((row) => ({
+      id: row.category_id,
+      name: row.category_name,
       totalTimeSpent: row.total_time_spent,
     })),
     days: dayRows.map((row) => ({

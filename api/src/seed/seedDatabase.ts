@@ -41,6 +41,24 @@ async function seedDatabase() {
     );
   `);
 
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY,
+      name VARCHAR(255) NOT NULL
+    );
+  `);
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS app_categories (
+      app_id VARCHAR(255) NOT NULL,
+      category_id INTEGER NOT NULL,
+      is_primary BOOLEAN DEFAULT FALSE,
+      FOREIGN KEY (app_id) REFERENCES apps(id),
+      FOREIGN KEY (category_id) REFERENCES categories(id),
+      PRIMARY KEY (app_id, category_id)
+    );
+  `);
+
   const insertQuery = `
     INSERT INTO events (init_time, end_time, device_uuid, app_id)
     VALUES ($1, $2, $3, $4)
@@ -98,7 +116,7 @@ async function seedDatabase() {
     }
   } catch (error: any) {
     await client.query("ROLLBACK");
-    
+
     console.error("------- Error inserting data -------");
     console.error("Timestamp:", new Date().toISOString());
     console.error("Error Message:", error.message);
@@ -165,6 +183,75 @@ async function seedDatabase() {
 
     process.exit(1);
   }
+
+  console.log("Retrieving apps data from iTunes API...");
+
+  await client.query("BEGIN");
+
+  try {
+    const appsData = await client.query("SELECT id FROM apps");
+    const itunesUrl = "https://itunes.apple.com/lookup?bundleId=";
+
+    for (const app of appsData.rows) {
+      const appID = app.id;
+
+      const response = await fetch(itunesUrl + appID);
+      const data = await response.json();
+
+      if (data.resultCount > 0) {
+        const appInfo = data.results[0];
+        const imageUrl = appInfo.artworkUrl60 || null;
+        const categories = appInfo.genres || [];
+        const categoryIDs = appInfo.genreIds || [];
+        const primaryCategoryID = appInfo.primaryGenreId || null;
+
+        await client.query(
+          `
+          UPDATE apps
+          SET image_url = $1
+          WHERE id = $2;
+        `,
+          [imageUrl, appID],
+        );
+
+        for (const categoryName of categories) {
+          const categoryID = categoryIDs[categories.indexOf(categoryName)];
+
+          await client.query(
+            `
+              INSERT INTO categories(id, name)
+              VALUES ($1, $2)
+              ON CONFLICT (id) DO NOTHING;
+            `,
+            [categoryID, categoryName],
+          );
+
+          await client.query(
+            `
+              INSERT INTO app_categories(app_id, category_id, is_primary)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (app_id, category_id) DO NOTHING;
+            `,
+            [appID, categoryID, categoryID === String(primaryCategoryID)],
+          );
+        }
+      }
+    }
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+
+    console.error("------- Error retrieving apps data -------");
+    console.error("Timestamp:", new Date().toISOString());
+    console.error("Error Message:", error.message);
+
+    if (error.stderr) console.error("Shell STDERR:", error.stderr);
+    if (error.stdout) console.error("Shell STDOUT:", error.stdout);
+
+    process.exit(1);
+  }
+
+  await client.query("COMMIT");
+  console.log("Apps data retrieved and updated successfully.");
 
   await client.end();
 }

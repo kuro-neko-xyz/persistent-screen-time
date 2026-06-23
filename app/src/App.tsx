@@ -13,9 +13,11 @@ import {
 const getWeeklyData = async ({
   date,
   deviceUUID,
+  showCategories,
 }: {
   date: Date;
   deviceUUID: string;
+  showCategories: boolean;
 }) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -27,7 +29,11 @@ const getWeeklyData = async ({
   const deviceQuery = deviceUUID ? `&device=${deviceUUID}` : "";
 
   const response = await fetch(
-    import.meta.env.VITE_API_URL + "/activity/week" + dateQuery + deviceQuery,
+    import.meta.env.VITE_API_URL +
+      "/activity/week" +
+      (showCategories ? "/category" : "") +
+      dateQuery +
+      deviceQuery,
   );
   const data = (await response.json()) as Activity;
 
@@ -62,15 +68,19 @@ function App() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>("");
 
+  const [showCategories, setShowCategories] = useState(false);
+
   useEffect(() => {
     getDevices().then((data) => setDevices(data));
   }, []);
 
   useEffect(() => {
-    getWeeklyData({ date: selectedDate, deviceUUID: selectedDevice }).then(
-      (data) => setData(data),
-    );
-  }, [selectedDate, selectedDevice]);
+    getWeeklyData({
+      date: selectedDate,
+      deviceUUID: selectedDevice,
+      showCategories,
+    }).then((data) => setData(data));
+  }, [selectedDate, selectedDevice, showCategories]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -158,33 +168,69 @@ function App() {
       </Bubble>
       <Bubble>
         <Bubble.Header>
-          <Select>
-            <option value="">Show Apps</option>
+          <Select
+            onChange={(e) => setShowCategories(e.target.value === "true")}
+            value={showCategories.toString()}
+          >
+            <option value="false">Show Apps</option>
+            <option value="true">Show Categories</option>
           </Select>
         </Bubble.Header>
         <Bubble.Body>
           <table>
             <thead>
               <tr>
-                <th>App</th>
+                {showCategories ? null : <th></th>}
+                <th>{showCategories ? "Category" : "App"}</th>
                 <th>Time</th>
               </tr>
             </thead>
-            <tbody>
-              {data.applications
-                .filter(
-                  (app) =>
-                    app.totalTimeSpent.hours || app.totalTimeSpent.minutes,
-                )
-                .map((app) => {
-                  return (
-                    <tr key={app.id}>
-                      <td>{app.name || app.id}</td>
-                      <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
-                    </tr>
-                  );
-                })}
-            </tbody>
+            {data.applications && (
+              <tbody>
+                {data.applications
+                  .filter(
+                    (app) =>
+                      app.totalTimeSpent.hours || app.totalTimeSpent.minutes,
+                  )
+                  .map((app) => {
+                    return (
+                      <tr key={app.id}>
+                        <td>
+                          {app.imageUrl ? (
+                            <img
+                              src={app.imageUrl}
+                              width={24}
+                              height={24}
+                              alt=""
+                            />
+                          ) : (
+                            <div style={{ width: 24, height: 24, margin: 2 }} />
+                          )}
+                        </td>
+                        <td>{app.name || app.id}</td>
+                        <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            )}
+            {data.categories && (
+              <tbody>
+                {data.categories
+                  .filter(
+                    (app) =>
+                      app.totalTimeSpent.hours || app.totalTimeSpent.minutes,
+                  )
+                  .map((app) => {
+                    return (
+                      <tr key={app.id}>
+                        <td>{app.name || app.id}</td>
+                        <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            )}
           </table>
         </Bubble.Body>
       </Bubble>
