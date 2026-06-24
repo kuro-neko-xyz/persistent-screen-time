@@ -42,7 +42,7 @@ async function seedDatabase() {
       device_uuid UUID NOT NULL,
       app_id VARCHAR(255) NOT NULL,
       FOREIGN KEY (device_uuid) REFERENCES devices(uuid),
-      FOREIGN KEY (app_id) REFERENCES apps(id),
+      FOREIGN KEY (app_id) REFERENCES apps(id) ON DELETE CASCADE,
       PRIMARY KEY (init_time, device_uuid, app_id)
     );
   `);
