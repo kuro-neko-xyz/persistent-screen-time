@@ -1,5 +1,11 @@
 import { Client } from "pg";
 import fs from "fs";
+import { fileURLToPath } from "url";
+import path from "path";
+import { promisify } from "util";
+import { exec } from "child_process";
+
+const execAsync = promisify(exec);
 
 const client = new Client({
   user: process.env.PG_USER,
@@ -192,6 +198,10 @@ async function seedDatabase() {
     const appsData = await client.query("SELECT id FROM apps");
     const itunesUrl = "https://itunes.apple.com/lookup?bundleId=";
 
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const publicIconsDir = path.resolve(__dirname, "../../../app/public/icons");
+
     for (const app of appsData.rows) {
       const appID = app.id;
 
@@ -235,6 +245,55 @@ async function seedDatabase() {
             [appID, categoryID, categoryID === String(primaryCategoryID)],
           );
         }
+      } else {
+        const filename = `${appID}.png`;
+        const filePath = path.join(publicIconsDir, filename);
+
+        if (!fs.existsSync(filePath)) {
+          const { stdout } = await execAsync(
+            `mdfind "kMDItemCFBundleIdentifier == '${appID}'"`,
+          );
+
+          const paths = stdout.trim().split("\n");
+
+          if (paths.length > 0) {
+            const appPath = paths[0];
+            const plistPath = path.join(appPath, "Contents", "Info.plist");
+            const resourcesPath = path.join(appPath, "Contents", "Resources");
+
+            if (fs.existsSync(plistPath) && fs.existsSync(resourcesPath)) {
+              const { stdout } = await execAsync(
+                `/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "${plistPath}"`,
+              );
+
+              let icnsFile = stdout.trim();
+
+              if (!icnsFile.endsWith(".icns")) {
+                icnsFile += ".icns";
+              }
+
+              if (icnsFile) {
+                const icnsPath = path.join(resourcesPath, icnsFile);
+                await execAsync(
+                  `sips -s format png -z 60 60 "${icnsPath}" --out "${filePath}"`,
+                );
+
+                const iconUrl = `/icons/${filename}`;
+
+                await client.query(
+                  `
+                  UPDATE apps
+                  SET image_url = $1
+                  WHERE id = $2;
+                `,
+                  [iconUrl, appID],
+                );
+              }
+            }
+          }
+        }
+
+        await execAsync(`sips -s format png -z 60 60 Applications/`);
       }
     }
   } catch (error: any) {

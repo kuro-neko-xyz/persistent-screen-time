@@ -198,6 +198,7 @@ function App() {
                         <td>
                           {app.imageUrl ? (
                             <img
+                              className={styles.appIcon}
                               src={app.imageUrl}
                               width={24}
                               height={24}
