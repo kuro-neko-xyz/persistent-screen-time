@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { promisify } from "util";
 import { exec } from "child_process";
+import sharp from "sharp";
 
 const execAsync = promisify(exec);
 
@@ -214,14 +215,16 @@ async function seedDatabase() {
         const categories = appInfo.genres || [];
         const categoryIDs = appInfo.genreIds || [];
         const primaryCategoryID = appInfo.primaryGenreId || null;
+        const appName = appInfo.trackName || null;
 
         await client.query(
           `
           UPDATE apps
-          SET image_url = $1
+          SET image_url = $1,
+              name = COALESCE(name, $3)
           WHERE id = $2;
         `,
-          [imageUrl, appID],
+          [imageUrl, appID, appName],
         );
 
         for (const categoryName of categories) {
@@ -246,7 +249,9 @@ async function seedDatabase() {
           );
         }
       } else {
+        const rawFilename = `raw_${appID}.png`;
         const filename = `${appID}.png`;
+        const rawFilePath = path.join(publicIconsDir, rawFilename);
         const filePath = path.join(publicIconsDir, filename);
 
         if (!fs.existsSync(filePath)) {
@@ -304,8 +309,18 @@ async function seedDatabase() {
               if (icnsFile && displayName) {
                 const icnsPath = path.join(resourcesPath, icnsFile);
                 await execAsync(
-                  `sips -s format png -z 60 60 "${icnsPath}" --out "${filePath}"`,
+                  `sips -s format png -z 60 60 "${icnsPath}" --out "${rawFilePath}"`,
                 );
+
+                await sharp(rawFilePath)
+                  .trim()
+                  .resize({
+                    width: 60,
+                    height: 60,
+                    fit: "contain",
+                    background: { r: 0, g: 0, b: 0, alpha: 0 },
+                  })
+                  .toFile(filePath);
 
                 const iconUrl = `/icons/${filename}`;
 
