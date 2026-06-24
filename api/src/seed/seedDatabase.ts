@@ -262,17 +262,46 @@ async function seedDatabase() {
             const resourcesPath = path.join(appPath, "Contents", "Resources");
 
             if (fs.existsSync(plistPath) && fs.existsSync(resourcesPath)) {
-              const { stdout } = await execAsync(
+              const { stdout: iconStdout } = await execAsync(
                 `/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "${plistPath}"`,
               );
 
-              let icnsFile = stdout.trim();
+              let icnsFile = iconStdout.trim();
 
               if (!icnsFile.endsWith(".icns")) {
                 icnsFile += ".icns";
               }
 
-              if (icnsFile) {
+              let displayName;
+
+              try {
+                const { stdout: displayNameStdout } = await execAsync(
+                  `/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "${plistPath}"`,
+                );
+
+                displayName = displayNameStdout.trim();
+              } catch (error) {
+                console.error(
+                  `Error retrieving display name for app ${appID}:`,
+                  error,
+                );
+              }
+
+              if (!displayName) {
+                try {
+                  const { stdout: nameStdout } = await execAsync(
+                    `/usr/libexec/PlistBuddy -c "Print :CFBundleName" "${plistPath}"`,
+                  );
+                  displayName = nameStdout.trim();
+                } catch (error) {
+                  console.error(
+                    `Error retrieving name for app ${appID}:`,
+                    error,
+                  );
+                }
+              }
+
+              if (icnsFile && displayName) {
                 const icnsPath = path.join(resourcesPath, icnsFile);
                 await execAsync(
                   `sips -s format png -z 60 60 "${icnsPath}" --out "${filePath}"`,
@@ -283,10 +312,11 @@ async function seedDatabase() {
                 await client.query(
                   `
                   UPDATE apps
-                  SET image_url = $1
-                  WHERE id = $2;
+                  SET image_url = $1,
+                      name = $2
+                  WHERE id = $3;
                 `,
-                  [iconUrl, appID],
+                  [iconUrl, displayName, appID],
                 );
               }
             }
