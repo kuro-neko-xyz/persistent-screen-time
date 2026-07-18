@@ -61,6 +61,13 @@ const calculateTimePercentage = (time: Time, longestDayInTheWeek: number) => {
   return `${percentage}%`;
 };
 
+const getTimeLabel = (totalTimeSpent: Time) => {
+  if (totalTimeSpent.hours || totalTimeSpent.minutes) {
+    return `${totalTimeSpent.hours ? totalTimeSpent.hours + "h " : ""} ${totalTimeSpent.minutes ? totalTimeSpent.minutes + "m " : ""}`;
+  }
+  return `${totalTimeSpent.seconds ? totalTimeSpent.seconds + "s" : "1s"}`;
+};
+
 function App() {
   const [data, setData] = useState<Activity>();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -187,32 +194,29 @@ function App() {
             </thead>
             {data.applications && (
               <tbody>
-                {data.applications
-                  .filter(
-                    (app) =>
-                      app.totalTimeSpent.hours || app.totalTimeSpent.minutes,
-                  )
-                  .map((app) => {
-                    return (
-                      <tr key={app.id}>
-                        <td>
-                          {app.imageUrl ? (
-                            <img
-                              className={styles.appIcon}
-                              src={app.imageUrl}
-                              width={24}
-                              height={24}
-                              alt=""
-                            />
-                          ) : (
-                            <div style={{ width: 24, height: 24, margin: 2 }} />
-                          )}
-                        </td>
-                        <td>{app.name || app.id}</td>
-                        <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
-                      </tr>
-                    );
-                  })}
+                {data.applications.map((app) => {
+                  return (
+                    <tr key={app.id}>
+                      <td className={styles.appIconContainer}>
+                        {app.imageUrl ? (
+                          <img
+                            className={styles.appIcon}
+                            src={app.imageUrl}
+                            width={24}
+                            height={24}
+                            alt=""
+                          />
+                        ) : (
+                          <div style={{ width: 24, height: 24, margin: 2 }} />
+                        )}
+                      </td>
+                      <td className={styles.appNameContainer}>
+                        {app.name || app.id}
+                      </td>
+                      <td>{getTimeLabel(app.totalTimeSpent)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             )}
             {data.categories && (
@@ -225,7 +229,9 @@ function App() {
                   .map((app) => {
                     return (
                       <tr key={app.id}>
-                        <td>{app.name || app.id}</td>
+                        <td className={styles.appNameContainer}>
+                          {app.name || app.id}
+                        </td>
                         <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
                       </tr>
                     );
