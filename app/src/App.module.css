@@ -57,3 +57,16 @@
 .appIcon {
   border-radius: 4px;
 }
+
+.appIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: 2px;
+}
+
+.appNameContainer {
+  padding-right: 5px;
+}
