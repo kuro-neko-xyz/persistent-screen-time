@@ -267,14 +267,20 @@ async function seedDatabase() {
             const resourcesPath = path.join(appPath, "Contents", "Resources");
 
             if (fs.existsSync(plistPath) && fs.existsSync(resourcesPath)) {
-              const { stdout: iconStdout } = await execAsync(
-                `/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "${plistPath}"`,
-              );
+              let icnsFile;
 
-              let icnsFile = iconStdout.trim();
+              try {
+                const { stdout: iconStdout } = await execAsync(
+                  `/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "${plistPath}"`,
+                );
 
-              if (!icnsFile.endsWith(".icns")) {
-                icnsFile += ".icns";
+                icnsFile = iconStdout.trim();
+
+                if (!icnsFile.endsWith(".icns")) {
+                  icnsFile += ".icns";
+                }
+              } catch (error) {
+                console.error(`No icon found for ${appID}`);
               }
 
               let displayName;
