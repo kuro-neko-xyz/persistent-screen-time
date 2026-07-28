@@ -1,6 +1,7 @@
-interface ActivityRequestParams {
+interface ActivityRequestQuery {
   date?: string;
+  "day-of-the-week"?: number;
   device?: string;
 }
 
-export type { ActivityRequestParams };
+export type { ActivityRequestQuery };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import styles from "./App.module.css";
 import Bubble from "./components/Bubble";
 import GraphControls from "./components/GraphControls";
@@ -14,10 +14,12 @@ const getWeeklyData = async ({
   date,
   deviceUUID,
   showCategories,
+  selectedDayOfTheWeek,
 }: {
   date: Date;
   deviceUUID: string;
   showCategories: boolean;
+  selectedDayOfTheWeek?: number;
 }) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -28,12 +30,18 @@ const getWeeklyData = async ({
   const dateQuery = `?date=${formattedDate}`;
   const deviceQuery = deviceUUID ? `&device=${deviceUUID}` : "";
 
+  const selectedDayOfTheWeekQuery =
+    selectedDayOfTheWeek !== undefined
+      ? `&day-of-the-week=${selectedDayOfTheWeek}`
+      : "";
+
   const response = await fetch(
     import.meta.env.VITE_API_URL +
       "/activity/week" +
       (showCategories ? "/category" : "") +
       dateQuery +
-      deviceQuery,
+      deviceQuery +
+      selectedDayOfTheWeekQuery,
   );
   const data = (await response.json()) as Activity;
 
@@ -68,6 +76,18 @@ const getTimeLabel = (totalTimeSpent: Time) => {
   return `${totalTimeSpent.seconds ? totalTimeSpent.seconds + "s" : "1s"}`;
 };
 
+const handleBarClick = (
+  index: number,
+  setSelectedDayOdTheWeek: Dispatch<SetStateAction<number | undefined>>,
+) => {
+  setSelectedDayOdTheWeek((prev) => {
+    if (typeof prev === "undefined") {
+      return index;
+    }
+    return undefined;
+  });
+};
+
 function App() {
   const [data, setData] = useState<Activity>();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -76,6 +96,8 @@ function App() {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
 
   const [showCategories, setShowCategories] = useState(false);
+
+  const [selectedDayOfTheWeek, setSelectedDayOfTheWeek] = useState<number>();
 
   useEffect(() => {
     getDevices().then((data) => setDevices(data));
@@ -86,8 +108,9 @@ function App() {
       date: selectedDate,
       deviceUUID: selectedDevice,
       showCategories,
+      selectedDayOfTheWeek,
     }).then((data) => setData(data));
-  }, [selectedDate, selectedDevice, showCategories]);
+  }, [selectedDate, selectedDevice, showCategories, selectedDayOfTheWeek]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -157,8 +180,12 @@ function App() {
                           longestDayInTheWeek,
                         ),
                         margin: 5,
+                        cursor: "pointer",
                       }}
                       key={day.date}
+                      onClick={() =>
+                        handleBarClick(index, setSelectedDayOfTheWeek)
+                      }
                     />
                     <p className={styles.dayName}>
                       {abbreviatedDaysOfTheWeek[index]}
