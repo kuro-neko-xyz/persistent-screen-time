@@ -2,10 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import dotenv from "dotenv";
 import postgres from "@fastify/postgres";
-import {
-  Activity,
-  ActivityRequestParams,
-} from "@persistent-screen-time/shared";
+import { Activity, ActivityRequestQuery } from "@persistent-screen-time/shared";
 import calculateBoundaries from "./utils/calculateBoundaries.js";
 import getAverageDailyTime from "./queries/getAverageDailyTime.js";
 import getDay from "./queries/getDay.js";
@@ -34,10 +31,16 @@ fastify.get("/", async (request, reply) => {
 });
 
 fastify.get<{
-  Querystring: ActivityRequestParams;
+  Querystring: ActivityRequestQuery;
   Reply: Activity;
 }>("/activity/week", async (request, reply) => {
-  const { date: dateString, device: deviceUUID } = request.query;
+  const {
+    date: dateString,
+    "day-of-the-week": dayOfTheWeek,
+    device: deviceUUID,
+  } = request.query;
+
+  console.log(dayOfTheWeek);
 
   const { sundayBoundary, saturdayBoundary } = calculateBoundaries(dateString);
 
@@ -48,6 +51,7 @@ fastify.get<{
     sundayBoundary,
     saturdayBoundary,
     deviceUUID,
+    dayOfTheWeek,
   );
 
   const { rows: dayRows } = await getDay(
@@ -55,6 +59,7 @@ fastify.get<{
     sundayBoundary,
     saturdayBoundary,
     deviceUUID,
+    dayOfTheWeek,
   );
 
   const { rows: applicationRows } = await client.query(
@@ -72,6 +77,7 @@ fastify.get<{
         init_time >= $1
         AND init_time <= $2
         AND ($3::uuid IS NULL OR device_uuid = $3)
+        AND ($4::int IS NULL OR EXTRACT (DOW FROM init_time) = $4)
       GROUP BY
         app_id,
         app_name,
@@ -79,7 +85,12 @@ fastify.get<{
       ORDER BY
         total_time_spent DESC;
     `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null],
+    [
+      sundayBoundary,
+      saturdayBoundary,
+      deviceUUID || null,
+      dayOfTheWeek ?? null,
+    ],
   );
 
   client.release();
@@ -100,10 +111,14 @@ fastify.get<{
 });
 
 fastify.get<{
-  Querystring: ActivityRequestParams;
+  Querystring: ActivityRequestQuery;
   Reply: Activity;
 }>("/activity/week/category", async (request, reply) => {
-  const { date: dateString, device: deviceUUID } = request.query;
+  const {
+    date: dateString,
+    "day-of-the-week": dayOfTheWeek,
+    device: deviceUUID,
+  } = request.query;
 
   const { sundayBoundary, saturdayBoundary } = calculateBoundaries(dateString);
 
@@ -114,6 +129,7 @@ fastify.get<{
     sundayBoundary,
     saturdayBoundary,
     deviceUUID,
+    dayOfTheWeek,
   );
 
   const { rows: dayRows } = await getDay(
@@ -121,6 +137,7 @@ fastify.get<{
     sundayBoundary,
     saturdayBoundary,
     deviceUUID,
+    dayOfTheWeek,
   );
 
   const { rows: categoryRows } = await client.query(
@@ -142,13 +159,19 @@ fastify.get<{
         AND e.init_time <= $2
         AND ($3::uuid IS NULL OR e.device_uuid = $3)
         AND ac.is_primary = TRUE
+        AND ($4::int IS NULL OR EXTRACT (DOW FROM e.init_time) = $4)
       GROUP BY
         c.id,
         category_name
       ORDER BY
         total_time_spent DESC;
     `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null],
+    [
+      sundayBoundary,
+      saturdayBoundary,
+      deviceUUID || null,
+      dayOfTheWeek ?? null,
+    ],
   );
 
   client.release();
@@ -168,7 +191,7 @@ fastify.get<{
 });
 
 fastify.get<{
-  Querystring: ActivityRequestParams;
+  Querystring: ActivityRequestQuery;
 }>("/activity/day", async (request, reply) => {
   const { date } = request.query;
 

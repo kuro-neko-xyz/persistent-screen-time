@@ -5,6 +5,7 @@ const getAverageDailyTime = async (
   sundayBoundary: string,
   saturdayBoundary: string,
   deviceUUID?: string,
+  dayOfTheWeek?: number,
 ) => {
   return client.query(
     `
@@ -15,9 +16,15 @@ const getAverageDailyTime = async (
       WHERE
         init_time >= $1
         AND init_time <= $2
-        AND ($3::uuid IS NULL OR device_uuid = $3);
+        AND ($3::uuid IS NULL OR device_uuid = $3)
+        AND ($4::int IS NULL OR EXTRACT (DOW FROM init_time) = $4);
     `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null],
+    [
+      sundayBoundary,
+      saturdayBoundary,
+      deviceUUID || null,
+      dayOfTheWeek ?? null,
+    ],
   );
 };
 

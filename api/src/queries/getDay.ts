@@ -5,6 +5,7 @@ const getDay = async (
   sundayBoundary: string,
   saturdayBoundary: string,
   deviceUUID?: string,
+  dayOfTheWeek?: number,
 ) => {
   const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -27,12 +28,19 @@ const getDay = async (
         AND init_time >= $1
         AND init_time <= $2
         AND ($3::uuid IS NULL OR device_uuid = $3)
+        AND ($5::int IS NULL OR EXTRACT (DOW FROM init_time) = $5)
       GROUP BY
         ds.date
       ORDER BY
         ds.date ASC;
     `,
-    [sundayBoundary, saturdayBoundary, deviceUUID || null, localTimeZone],
+    [
+      sundayBoundary,
+      saturdayBoundary,
+      deviceUUID || null,
+      localTimeZone,
+      dayOfTheWeek ?? null,
+    ],
   );
 };
 
