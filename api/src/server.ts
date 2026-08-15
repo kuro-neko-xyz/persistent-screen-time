@@ -2,7 +2,11 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import dotenv from "dotenv";
 import postgres from "@fastify/postgres";
-import { Activity, ActivityRequestQuery } from "@persistent-screen-time/shared";
+import {
+  Activity,
+  ActivityRequestQuery,
+  AppUsageRequestQuery,
+} from "@persistent-screen-time/shared";
 import calculateBoundaries from "./utils/calculateBoundaries.js";
 import getAverageDailyTime from "./queries/getAverageDailyTime.js";
 import getDay from "./queries/getDay.js";
@@ -231,6 +235,49 @@ fastify.get<{
   client.release();
 
   return rows;
+});
+
+fastify.get<{
+  Querystring: AppUsageRequestQuery;
+}>("/app/usage", async (request, reply) => {
+  const { "app-id": appId } = request.query;
+
+  const client = await fastify.pg.connect();
+
+  const { rows: usageRows } = await client.query(
+    `
+      SELECT
+        (init_time)::DATE AS usage_date,
+        SUM(end_time - init_time) AS total_time
+      FROM
+        events
+      WHERE app_id = $1
+      GROUP BY
+        usage_date
+      ORDER BY
+        usage_date ASC;
+    `,
+    [appId],
+  );
+
+  const { rows: appName } = await client.query(
+    `
+      SELECT
+        name
+      FROM
+        apps
+      WHERE
+        id = $1;
+    `,
+    [appId],
+  );
+
+  client.release();
+
+  return {
+    appName,
+    usage: usageRows,
+  };
 });
 
 fastify.get("/devices", async (request, reply) => {
