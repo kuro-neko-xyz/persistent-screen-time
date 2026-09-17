@@ -42,8 +42,9 @@ async function ensureLaunchdScheduled() {
         
         <key>ProgramArguments</key>
         <array>
-            <string>${nodePath}</string>
-            <string>${path.join(projectRoot, "dist/seed/index.js")}</string>
+            <string>/bin/sh</string>
+            <string>-c</string>
+            <string>${nodePath} ${path.join(projectRoot, "dist/seed/index.js")} &amp;&amp; date &gt; /tmp/${JOB_LABEL}.canary</string>
         </array>
 
         <key>RunAtLoad</key>
