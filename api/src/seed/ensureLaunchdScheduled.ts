@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
 
 const JOB_LABEL = "me.persistentscreenti.me";
 
-const RUN_INTERVAL_SECONDS = 60 * 60 * 24;
+const RUN_INTERVAL_SECONDS = 60 * 60;
 
 const HOME_DIR = os.homedir();
 const PLIST_DIR = path.join(HOME_DIR, "Library", "LaunchAgents");
@@ -45,6 +45,9 @@ async function ensureLaunchdScheduled() {
             <string>${nodePath}</string>
             <string>${path.join(projectRoot, "dist/seed/index.js")}</string>
         </array>
+
+        <key>RunAtLoad</key>
+        <true />
         
         <key>StartInterval</key>
         <integer>${RUN_INTERVAL_SECONDS}</integer>

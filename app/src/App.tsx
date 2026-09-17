@@ -9,6 +9,7 @@ import {
   type Device,
   type Time,
 } from "@persistent-screen-time/shared";
+import AppsBubble from "./components/AppsBubble";
 
 const getWeeklyData = async ({
   date,
@@ -69,13 +70,6 @@ const calculateTimePercentage = (time: Time, longestDayInTheWeek: number) => {
   return `${percentage}%`;
 };
 
-const getTimeLabel = (totalTimeSpent: Time) => {
-  if (totalTimeSpent.hours || totalTimeSpent.minutes) {
-    return `${totalTimeSpent.hours ? totalTimeSpent.hours + "h " : ""} ${totalTimeSpent.minutes ? totalTimeSpent.minutes + "m " : ""}`;
-  }
-  return `${totalTimeSpent.seconds ? totalTimeSpent.seconds + "s" : "1s"}`;
-};
-
 const handleBarClick = (
   index: number,
   setSelectedDayOdTheWeek: Dispatch<SetStateAction<number | undefined>>,
@@ -98,6 +92,8 @@ function App() {
   const [showCategories, setShowCategories] = useState(false);
 
   const [selectedDayOfTheWeek, setSelectedDayOfTheWeek] = useState<number>();
+
+  // const [selectedApp, setSelectedApp] = useState("");
 
   useEffect(() => {
     getDevices().then((data) => setDevices(data));
@@ -200,74 +196,12 @@ function App() {
           </div>
         </Bubble.Body>
       </Bubble>
-      <Bubble>
-        <Bubble.Header>
-          <Select
-            onChange={(e) => setShowCategories(e.target.value === "true")}
-            value={showCategories.toString()}
-          >
-            <option value="false">Show Apps</option>
-            <option value="true">Show Categories</option>
-          </Select>
-        </Bubble.Header>
-        <Bubble.Body>
-          <table>
-            <thead>
-              <tr>
-                {showCategories ? null : <th></th>}
-                <th>{showCategories ? "Category" : "App"}</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            {data.applications && (
-              <tbody>
-                {data.applications.map((app) => {
-                  return (
-                    <tr key={app.id}>
-                      <td className={styles.appIconContainer}>
-                        {app.imageUrl ? (
-                          <img
-                            className={styles.appIcon}
-                            src={app.imageUrl}
-                            width={24}
-                            height={24}
-                            alt=""
-                          />
-                        ) : (
-                          <div style={{ width: 24, height: 24, margin: 2 }} />
-                        )}
-                      </td>
-                      <td className={styles.appNameContainer}>
-                        {app.name || app.id}
-                      </td>
-                      <td>{getTimeLabel(app.totalTimeSpent)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            )}
-            {data.categories && (
-              <tbody>
-                {data.categories
-                  .filter(
-                    (app) =>
-                      app.totalTimeSpent.hours || app.totalTimeSpent.minutes,
-                  )
-                  .map((app) => {
-                    return (
-                      <tr key={app.id}>
-                        <td className={styles.appNameContainer}>
-                          {app.name || app.id}
-                        </td>
-                        <td>{`${app.totalTimeSpent.hours ? app.totalTimeSpent.hours + "h " : ""} ${app.totalTimeSpent.minutes ? app.totalTimeSpent.minutes + "m " : ""}`}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            )}
-          </table>
-        </Bubble.Body>
-      </Bubble>
+      <AppsBubble
+        applications={data.applications}
+        categories={data.categories}
+        setShowCategories={setShowCategories}
+        showCategories={showCategories}
+      />
     </div>
   );
 }
