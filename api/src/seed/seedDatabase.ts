@@ -196,14 +196,16 @@ async function seedDatabase() {
   await client.query("BEGIN");
 
   try {
-    const appsData = await client.query("SELECT id FROM apps");
+    const appsData = await client.query("SELECT id, name, image_url FROM apps");
     const itunesUrl = "https://itunes.apple.com/lookup?bundleId=";
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const publicIconsDir = path.resolve(__dirname, "../../../app/public/icons");
 
-    for (const app of appsData.rows) {
+    const rows = appsData.rows.filter((app) => !app.name || !app.image_url);
+
+    for (const app of rows) {
       const appID = app.id;
 
       const response = await fetch(itunesUrl + appID);

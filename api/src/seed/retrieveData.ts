@@ -59,7 +59,7 @@ async function retrieveData() {
 
   try {
     await execAsync(
-      `${AW_IMPORT_SCREENTIME_PATH}/.venv/bin/aw-import-screentime events preview > ${API_ROOT_DIRECTORY}/iphone_usage.json`,
+      `${AW_IMPORT_SCREENTIME_PATH}/.venv/bin/aw-import-screentime events preview --limit 0 > ${API_ROOT_DIRECTORY}/iphone_usage.json`,
     );
     await execAsync(`sqlite3 -readonly -json '${HOME_PATH}/Library/Application Support/Knowledge/knowledgeC.db' "
       SELECT *

@@ -285,7 +285,12 @@ fastify.get("/devices", async (request, reply) => {
 
   const { rows } = await client.query(
     `
-      SELECT * FROM devices;
+      SELECT
+        *
+      FROM
+        devices
+      ORDER BY
+        name;
     `,
   );
 
